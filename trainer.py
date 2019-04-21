@@ -1,3 +1,5 @@
+import os
+import logging
 from utils import check_path_exists
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Input
@@ -6,8 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from tqdm import tqdm
-import logging
 
+
+logger = logging.getLogger('image_super_resolution')
 
 class Trainer:
     def __init__(self, model, weights, load_weights, tensors, train_time=1, batch_size=32):
@@ -68,8 +71,10 @@ class GANTrainer:
     """
     GAN training class. It plots the result of the training on a specified period of training epochs.
     """
-    def __init__(self, models, optimizers, losses, loss_weights, weights, load_weights, tensors, compare_path='.', **kwargs):
+    def __init__(self, models, optimizers, losses, loss_weights, weights, load_weights, tensors, compare_path='.',
+                 **kwargs):
         """
+        Initialization function for the GANTrainer.
 
         :param models:
         :param optimizers:
@@ -125,7 +130,7 @@ class GANTrainer:
         plt.tight_layout()
         plt.savefig('gan_generated_image %d.png' % epoch)
 
-    def plot_images_for_compare(self, epoch, examples=7, base_path='.'):
+    def plot_images_for_compare(self, epoch, examples=7, base_path='.', base_name='compare_images_for_epoch_'):
         dim = (examples, 3)
         figsize = (examples, examples*2)
 
@@ -139,22 +144,25 @@ class GANTrainer:
         for i in range(generated_images.shape[0]):
             for a in range(3):
                 if a == 0:
-                    # small resolution
+                    # Low resolution
                     plt.subplot(dim[0], dim[1], sub_plot + 1)
                     plt.imshow((images[i] * 255).astype(np.uint8), interpolation='nearest', aspect='equal')
                 if a == 1:
-                    # generated one
+                    # Generated image
                     plt.subplot(dim[0], dim[1], sub_plot + 1)
                     plt.imshow((generated_images[i] * 255).astype(np.uint8), interpolation='nearest', aspect='equal')
                 if a == 2:
-                    # real high resolution
+                    # High resolution
                     plt.subplot(dim[0], dim[1], sub_plot + 1)
                     plt.imshow((real_images[i] * 255).astype(np.uint8), interpolation='nearest', aspect='equal')
                 plt.axis('off')
                 sub_plot += 1
 
         plt.tight_layout()
-        plt.savefig('gan_generated_image %d.png' % epoch)
+        image_name = '{}{:06d}.png'.format(base_name, epoch)
+        image_path = os.path.join(base_path, image_name)
+        logger.debug('Saving for compare: {}'.format(image_path))
+        plt.savefig(image_path)
 
     def create_gan(self):
         self._discriminator.trainable = False
@@ -242,7 +250,7 @@ class GANTrainer:
                 self._gan.train_on_batch(noise, y_gen)
 
             if e == 1 or e % epochs_between_plots == 0:
-                self.plot_images_for_compare(epoch=e)
+                self.plot_images_for_compare(epoch=e, base_path=self._compare_path)
 
             if epochs_between_saves > 0 and e % epochs_between_saves == 0:
                 self.save_models_weights()
