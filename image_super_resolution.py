@@ -1,7 +1,7 @@
 from models import generator_no_residual, generator_with_residual, discriminator
 from models import model_weights_no_residual, model_weights_with_residual
 from data_loader import load_images_with_truth
-from loss_functions import perceptual_loss, perceptual_loss_16
+from loss_functions import perceptual_loss, perceptual_loss_16, texture_loss, perceptual_plus_texture_loss
 from keras.optimizers import Adam
 from keras.losses import mean_squared_error, binary_crossentropy
 from trainer import GANTrainer, create_tensors_dict, trainer
@@ -11,12 +11,13 @@ train_epochs = 100000
 train_batch_size = 32
 epochs_between_plots = 100
 epochs_between_saves = 100
-load_saved_checkpoint_before_training = False
+load_saved_checkpoint_before_training = True
+max_train_time = 60 * 24    # 24 hours
 
 # Define the dataset path
-train_dataset_path = './data/celeba/train/*'
+train_dataset_path = './data/celeba/train_small/*'
 validation_dataset_path = './data/celeba/valid_small/*'
-test_dataset_path = './data/celeba/test/*'
+test_dataset_path = './data/celeba/test_small/*'
 
 print('Loading train data:')
 train_data, train_truth = load_images_with_truth(train_dataset_path, 4)
@@ -46,13 +47,13 @@ discriminator = discriminator(input_shape=train_truth.shape[1:])
 optimizer = Adam(lr=1e-4)
 models = {'generator': generator, 'discriminator': discriminator}
 optimizers = {'generator': optimizer, 'discriminator': optimizer, 'gan': optimizer}
-losses = {'generator': perceptual_loss_16, 'discriminator': binary_crossentropy, 'gan': mean_squared_error}
+losses = {'generator': perceptual_plus_texture_loss, 'discriminator': binary_crossentropy, 'gan': binary_crossentropy}
 weights = {'generator': './saved_models/weights.generator.hdf5',
            'discriminator': './saved_models/weights.discriminator.hdf5'}
 
 trainer = GANTrainer(models, optimizers, losses, None, weights, load_saved_checkpoint_before_training, tensors)
-trainer.train(epochs=train_epochs, batch_size=train_batch_size,
-              epochs_between_plots=epochs_between_plots, epochs_between_saves=epochs_between_saves)
+trainer.train(epochs=train_epochs, batch_size=train_batch_size, epochs_between_plots=epochs_between_plots,
+              epochs_between_saves=epochs_between_saves, max_train_time=max_train_time)
 
 print('All done!')
 
