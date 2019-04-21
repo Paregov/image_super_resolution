@@ -102,3 +102,14 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+
+# Project specific
+/.idea
+/.ipynb_checkpoints
+/__pycache__
+/compare
+/data
+/deprecated
+/pre_trained_models
+/saved_models
