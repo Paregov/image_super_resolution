@@ -35,7 +35,7 @@ train_epochs = 100000
 train_batch_size = 32
 epochs_between_plots = 100
 epochs_between_saves = 100
-load_saved_checkpoint_before_training = True
+load_saved_checkpoint_before_training = False
 max_train_time = 60 * 24    # 24 hours
 
 # Define the dataset path
