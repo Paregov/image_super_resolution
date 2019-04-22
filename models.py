@@ -19,7 +19,7 @@ def _residual_block(x, filters=64, kernel_size=3, kernel_initializer='uniform'):
 
 
 def _residual_network(x, kernel_initializer='uniform'):
-    # bicubic = Resampling2D([4, 4], method='BICUBIC')(x)
+    bicubic = Resampling2D([4, 4], method='BICUBIC')(x)
     
     x = Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer)(x)
 
@@ -35,8 +35,7 @@ def _residual_network(x, kernel_initializer='uniform'):
     x = Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer)(x)
     x = Conv2D(filters=3, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer)(x)
 
-    return x
-    # return add([x, bicubic])
+    return add([x, bicubic])
 
 
 def generator_no_residual(input_shape, summary=False, kernel_initializer='uniform'):
