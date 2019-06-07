@@ -5,10 +5,6 @@ import tensorflow as tf
 from layers import Resampling2D
 
 
-model_weights_no_residual = './saved_models/weights.no.res.best.train.hdf5'
-model_weights_with_residual = './saved_models/weights.with.res.best.train.hdf5'
-
-
 def _residual_block(x, filters=64, kernel_size=3, kernel_initializer='uniform'):
     shortcut = x
 
@@ -38,6 +34,24 @@ def _residual_network(x, kernel_initializer='uniform'):
     return add([x, bicubic])
 
 
+def _residual_network_no_bicubic(x, kernel_initializer='uniform'):
+    x = Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer)(x)
+
+    # Add the Residual layer 10 times
+    for i in range(10):
+        x = _residual_block(x, kernel_initializer=kernel_initializer)
+
+    x = UpSampling2D(size=(2, 2), interpolation='nearest')(x)
+    x = Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer)(x)
+
+    x = UpSampling2D(size=(2, 2), interpolation='nearest')(x)
+    x = Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer)(x)
+    x = Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer)(x)
+    x = Conv2D(filters=3, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer)(x)
+
+    return x
+
+
 def generator_no_residual(input_shape, summary=False, kernel_initializer='uniform'):
     model = Sequential()
 
@@ -60,9 +74,14 @@ def generator_no_residual(input_shape, summary=False, kernel_initializer='unifor
     return model
 
 
-def generator_with_residual(input_shape, summary=False, kernel_initializer='uniform'):
+def generator_with_residual(input_shape, summary=False, kernel_initializer='uniform', add_bicubic=True):
     image_tensor = Input(shape=input_shape)
-    network_output = _residual_network(image_tensor, kernel_initializer=kernel_initializer)
+    network_output = None
+    if add_bicubic:
+        network_output = _residual_network(image_tensor, kernel_initializer=kernel_initializer)
+    else:
+        network_output = _residual_network_no_bicubic(image_tensor, kernel_initializer=kernel_initializer)
+
     model = Model(inputs=[image_tensor], outputs=[network_output])
 
     if summary:
