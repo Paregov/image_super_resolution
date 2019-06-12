@@ -24,6 +24,7 @@ def plot_images_for_compare_separate(inputs, predictions, truths, indexes):
         plt.show()
 
 
+# TODO: Refactor this function so it accepts predictions as array of dictionaries [{'image': image, 'name': 'name'}, ...] and remove the second array 'model_names'
 def plot_multi_model_images_for_compare_separate(inputs, predictions, model_names, truths, indexes, show_input=False, show_interpolated=True):
     length = len(indexes)
     predictions_count = len(predictions)
@@ -65,6 +66,10 @@ def plot_single_image_multi_model(input_image, predictions, truth, show_input=Tr
     """
     Plot a single image that is predicted with multiple models for compare.
     We are going to show 4 images per row and will create as many rows as needed to show all of the predictions, input, interpolated and truth
+    
+    Params:
+    input_image - the input image that is being enchanced
+    predictions - list of maps [{'image': image, 'name': 'name'}, ...]
     """
     images_per_row = 4
     predictions_count = len(predictions)
@@ -76,7 +81,9 @@ def plot_single_image_multi_model(input_image, predictions, truth, show_input=Tr
     if show_interpolated:
         total_count += 1
     
-    rows = int(total_count / images_per_row) + 1
+    rows = int(total_count / images_per_row)
+    if total_count % images_per_row != 0:
+        rows += 1
     
     prediction_index = 0
     for i in range(rows):
@@ -131,12 +138,14 @@ def compare_models_single_iamge(test_data_tensors, test_truth_tensors, models_da
         model_data['model'].load_weights(model_data['checkpoint'])
         predictions_per_model.append({'data': model_data['model'].predict(test_data_tensors), 'name': model_data['name']})
     
+    print('Plotting the results...')
     for i in test_image_index_to_show:
         predictions = []
         for pred in predictions_per_model:
             predictions.append({'image': pred['data'][i], 'name': pred['name']})
 
-        print('Plotting the results...')
+        print("Image: {0}".format(i + 1))
         plot_single_image_multi_model(test_data_tensors[i], predictions, test_truth_tensors[i])
+        print("")
 
     print('All done!')
