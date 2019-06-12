@@ -1,6 +1,5 @@
 import logging
 from models import generator_no_residual, generator_with_residual, discriminator
-from models import model_weights_no_residual, model_weights_with_residual
 from data_loader import load_images_with_truth
 from loss_functions import perceptual_loss, perceptual_loss_16, texture_loss, perceptual_plus_texture_loss
 from keras.optimizers import Adam

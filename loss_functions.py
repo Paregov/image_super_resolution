@@ -63,7 +63,17 @@ def perceptual_loss(y_true, y_pred):
 
 
 def perceptual_loss_16(y_true, y_pred):
-    vgg = VGG16(include_top=False, weights='imagenet', input_shape=(128, 128, 3))
+    _, h, w, c = y_pred.shape
+    vgg = VGG16(include_top=False, weights='imagenet', input_shape=(int(h), int(w), int(c)))
+    loss_model = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_pool').output)
+    loss_model.trainable = False
+
+    return K.mean(K.square(loss_model(y_true) - loss_model(y_pred)))
+
+
+def perceptual_loss_19(y_true, y_pred):
+    _, h, w, c = y_pred.shape
+    vgg = VGG19(include_top=False, weights='imagenet', input_shape=(int(h), int(w), int(c)))
     loss_model = Model(inputs=vgg.input, outputs=vgg.get_layer('block3_pool').output)
     loss_model.trainable = False
 
@@ -95,6 +105,15 @@ def texture_loss_multi_layers(y_true, y_pred):
 
 def perceptual_plus_texture_loss(y_true, y_pred):
     perceptual = perceptual_loss(y_true, y_pred)
+    texture = texture_loss_multi_layers(y_true, y_pred)
+
+    return perceptual + texture
+
+
+def perceptual_16_plus_texture_loss(y_true, y_pred):
+    """
+    """
+    perceptual = perceptual_loss_16(y_true, y_pred)
     texture = texture_loss_multi_layers(y_true, y_pred)
 
     return perceptual + texture
