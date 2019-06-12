@@ -287,7 +287,8 @@ class GANGridTrainer:
         for m in self._param_grid['models']:
             for o in self._param_grid['optimizers']:
                 for l in self._param_grid['losses']:
-                    # Generate full paths for the weights here
+                    # TODO: Save the combination that is currently used
+                    # TODO: Generate full paths for the weights here
                     t = GANTrainer(models=m, optimizers=o, losses=l, loss_weights=None,
                                    weights=None, load_weights=self._load_weights, tensors=tensors)
                     t.train(1000)

@@ -39,7 +39,7 @@ load_saved_checkpoint_before_training = False
 max_train_time = 60 * 24    # 24 hours
 
 # Define the dataset path
-train_dataset_path = './data/celeba/train_small/*'
+train_dataset_path = './data/celeba/train/*'
 validation_dataset_path = './data/celeba/valid_small/*'
 test_dataset_path = './data/celeba/test_small/*'
 
