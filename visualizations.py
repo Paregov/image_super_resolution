@@ -132,7 +132,7 @@ def compare_models(test_data_tensors, test_truth_tensors, models_data, test_imag
     print('All done!')
 
     
-def compare_models_single_iamge(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show, show_input=True, show_interpolated=True):
+def compare_models_single_image(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show, show_input=True, show_interpolated=True):
     predictions_per_model = []
     for model_data in models_data:
         model_data['model'].load_weights(model_data['checkpoint'])
