@@ -24,7 +24,8 @@ def plot_images_for_compare_separate(inputs, predictions, truths, indexes):
         plt.show()
 
 
-# TODO: Refactor this function so it accepts predictions as array of dictionaries [{'image': image, 'name': 'name'}, ...] and remove the second array 'model_names'
+# TODO: Refactor this function so it accepts predictions as array of dictionaries
+#  [{'image': image, 'name': 'name'}, ...] and remove the second array 'model_names'
 def plot_multi_model_images_for_compare_separate(inputs, predictions, model_names, truths, indexes, show_input=False, show_interpolated=True):
     length = len(indexes)
     predictions_count = len(predictions)
@@ -65,10 +66,11 @@ def plot_multi_model_images_for_compare_separate(inputs, predictions, model_name
 def plot_single_image_multi_model(input_image, predictions, truth, show_input=True, show_interpolated=True):
     """
     Plot a single image that is predicted with multiple models for compare.
-    We are going to show 4 images per row and will create as many rows as needed to show all of the predictions, input, interpolated and truth
+    We are going to show 4 images per row and will create as many rows as needed to show all of the predictions,
+    input, interpolated and truth
     
     Params:
-    input_image - the input image that is being enchanced
+    input_image - the input image that is being enhanced
     predictions - list of maps [{'image': image, 'name': 'name'}, ...]
     """
     images_per_row = 4
@@ -95,7 +97,7 @@ def plot_single_image_multi_model(input_image, predictions, truth, show_input=Tr
             axarr[pos].set_title('input')
             pos += 1
         
-        if i == 0 and show_input:
+        if i == 0 and show_interpolated:
             axarr[pos].imshow(input_image, interpolation='bicubic')
             axarr[pos].set_title('bicubic')
             pos += 1
@@ -118,7 +120,8 @@ def plot_single_image_multi_model(input_image, predictions, truth, show_input=Tr
         plt.show()
 
 
-def compare_models(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show, show_input=True, show_interpolated=True):
+def compare_models(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show, show_input=True,
+                   show_interpolated=True):
     predictions = []
     model_names = []
     for model_data in models_data:
@@ -127,16 +130,22 @@ def compare_models(test_data_tensors, test_truth_tensors, models_data, test_imag
         predictions.append(model_data['model'].predict(test_data_tensors))
     
     print('Plotting the results...')
-    plot_multi_model_images_for_compare_separate(test_data_tensors, predictions, model_names, test_truth_tensors, test_image_index_to_show, show_input)
+    plot_multi_model_images_for_compare_separate(test_data_tensors, predictions,
+                                                 model_names, test_truth_tensors,
+                                                 test_image_index_to_show,
+                                                 show_input=show_input,
+                                                 show_interpolated=show_interpolated)
 
     print('All done!')
 
     
-def compare_models_single_image(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show, show_input=True, show_interpolated=True):
+def compare_models_single_image(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show,
+                                show_input=True, show_interpolated=True):
     predictions_per_model = []
     for model_data in models_data:
         model_data['model'].load_weights(model_data['checkpoint'])
-        predictions_per_model.append({'data': model_data['model'].predict(test_data_tensors), 'name': model_data['name']})
+        predictions_per_model.append({'data': model_data['model'].predict(test_data_tensors),
+                                      'name': model_data['name']})
     
     print('Plotting the results...')
     for i in test_image_index_to_show:
@@ -145,7 +154,9 @@ def compare_models_single_image(test_data_tensors, test_truth_tensors, models_da
             predictions.append({'image': pred['data'][i], 'name': pred['name']})
 
         print("Image: {0}".format(i + 1))
-        plot_single_image_multi_model(test_data_tensors[i], predictions, test_truth_tensors[i])
+        plot_single_image_multi_model(test_data_tensors[i], predictions, test_truth_tensors[i],
+                                      show_input=show_input,
+                                      show_interpolated=show_interpolated)
         print("")
 
     print('All done!')

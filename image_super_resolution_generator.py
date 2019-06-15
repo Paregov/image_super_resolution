@@ -15,7 +15,7 @@ from keras.optimizers import Adam
 running_on_laptop = False
 
 # This will use the smaller datasets (train_small, val_small, test_small).
-use_small_dataset = True
+use_small_dataset = False
 
 # Set to true if you want to use CelebA dataset. Otherwise it will use MS COCO.
 use_dataset_celeba = False
@@ -30,15 +30,15 @@ enable_p = False
 enable_p16 = False
 enable_p19 = False
 enable_t = False
-enable_pt = False
-enable_pt16 = False
-enable_pt16_bci = True
+enable_pt = True
+enable_pt16 = True
+enable_pt16_bci = False
 enable_pt_bci = True
-enable_pt16_no_res = True
+enable_pt16_no_res = False
 
-train_epochs = 10
-train_batch_size = 32
-test_image_index_to_show = range(20)
+train_epochs = 100
+train_batch_size = 48
+test_image_index_to_show = range(2)
 optimizer = Adam(lr=0.0001)
 
 if running_on_laptop:
@@ -66,26 +66,26 @@ print(train_dataset_path)
 print(validation_dataset_path)
 print(test_dataset_path)
 
-perceptual_loss_checkpint_path = './saved_models/weights.best.train.mscoco.pl.hdf5'
-perceptual_loss_16_checkpoint_path = './saved_models/weights.best.train.mscoco.pl16.hdf5'
-perceptual_loss_19_checkpoint_path = './saved_models/weights.best.train.mscoco.pl19.hdf5'
-texture_loss_ml_checkpoint_path = './saved_models/weights.best.train.mscoco.tl_ml.hdf5'
-texture_plus_perceptual_loss_checkpoint_path = './saved_models/weights.best.train.mscoco.tl_plus_pl.hdf5'
-perceptual_16_plus_texture_loss_checkpoint_path = './saved_models/weights.best.train.mscoco.pl16_plus_tl.hdf5'
-perceptual_16_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.mscoco.pl16_plus_tl_bci.hdf5'
-perceptual_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.mscoco.pl_plus_tl_bci.hdf5'
-perceptual_16_plus_texture_loss_no_res_checkpoint_path = './saved_models/weights.best.train.mscoco.pl16_plus_tl_no_res.hdf5'
+perceptual_loss_checkpint_path = './saved_models/weights.best.train.mscoco.p.hdf5'
+perceptual_loss_16_checkpoint_path = './saved_models/weights.best.train.mscoco.p16.hdf5'
+perceptual_loss_19_checkpoint_path = './saved_models/weights.best.train.mscoco.p19.hdf5'
+texture_loss_ml_checkpoint_path = './saved_models/weights.best.train.mscoco.t.hdf5'
+texture_plus_perceptual_loss_checkpoint_path = './saved_models/weights.best.train.mscoco.pt.hdf5'
+perceptual_16_plus_texture_loss_checkpoint_path = './saved_models/weights.best.train.mscoco.pt16.hdf5'
+perceptual_16_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.mscoco.pt16_bci.hdf5'
+perceptual_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.mscoco.pt_bci.hdf5'
+perceptual_16_plus_texture_loss_no_res_checkpoint_path = './saved_models/weights.best.train.mscoco.pt16_no_res.hdf5'
 
 if use_dataset_celeba:
-    perceptual_loss_checkpint_path = './saved_models/weights.best.train.celeba.pl.hdf5'
-    perceptual_loss_16_checkpoint_path = './saved_models/weights.best.train.celeba.pl16.hdf5'
-    perceptual_loss_19_checkpoint_path = './saved_models/weights.best.train.celeba.pl19.hdf5'
-    texture_loss_ml_checkpoint_path = './saved_models/weights.best.train.celeba.tl_ml.hdf5'
-    texture_plus_perceptual_loss_checkpoint_path = './saved_models/weights.best.train.celeba.tl_plus_pl.hdf5'
-    perceptual_16_plus_texture_loss_checkpoint_path = './saved_models/weights.best.train.celeba.pl16_plus_tl.hdf5'
-    perceptual_16_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.celeba.pl16_plus_tl_bci.hdf5'
-    perceptual_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.celeba.pl_plus_tl_bci.hdf5'
-    perceptual_16_plus_texture_loss_no_res_checkpoint_path = './saved_models/weights.best.train.celeba.pl16_plus_tl_no_res.hdf5'
+    perceptual_loss_checkpint_path = './saved_models/weights.best.train.celeba.p.hdf5'
+    perceptual_loss_16_checkpoint_path = './saved_models/weights.best.train.celeba.p16.hdf5'
+    perceptual_loss_19_checkpoint_path = './saved_models/weights.best.train.celeba.p19.hdf5'
+    texture_loss_ml_checkpoint_path = './saved_models/weights.best.train.celeba.t.hdf5'
+    texture_plus_perceptual_loss_checkpoint_path = './saved_models/weights.best.train.celeba.pt.hdf5'
+    perceptual_16_plus_texture_loss_checkpoint_path = './saved_models/weights.best.train.celeba.pt16.hdf5'
+    perceptual_16_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.celeba.pt16_bci.hdf5'
+    perceptual_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.celeba.pt_bci.hdf5'
+    perceptual_16_plus_texture_loss_no_res_checkpoint_path = './saved_models/weights.best.train.celeba.pt16_no_res.hdf5'
 
 
 print('Loading train data:')
@@ -286,5 +286,5 @@ if enable_pt16_no_res:
                         'checkpoint': perceptual_16_plus_texture_loss_no_res_checkpoint_path})
 
 compare_models_single_image(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show,
-                            show_input=True)
+                            show_input=True, show_interpolated=False)
 
