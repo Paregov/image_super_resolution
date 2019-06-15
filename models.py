@@ -59,12 +59,16 @@ def generator_no_residual(input_shape, summary=False, kernel_initializer='unifor
                      input_shape=input_shape, kernel_initializer=kernel_initializer))
 
     model.add(UpSampling2D(size=(2, 2), interpolation='nearest'))
-    model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer))
+    model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation='relu',
+                     kernel_initializer=kernel_initializer))
 
     model.add(UpSampling2D(size=(2, 2), interpolation='nearest'))
-    model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer))
-    model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer))
-    model.add(Conv2D(filters=3, kernel_size=3, padding='same', activation='relu', kernel_initializer=kernel_initializer))
+    model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation='relu',
+                     kernel_initializer=kernel_initializer))
+    model.add(Conv2D(filters=64, kernel_size=3, padding='same', activation='relu',
+                     kernel_initializer=kernel_initializer))
+    model.add(Conv2D(filters=3, kernel_size=3, padding='same', activation='relu',
+                     kernel_initializer=kernel_initializer))
 
     model.build()
 
