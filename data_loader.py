@@ -17,7 +17,7 @@ def crop_center_rectangle(img, side):
         (center_width - half, center_height - half, floor(center_width + half), floor(center_height + half)))
 
 
-def load_image_with_truth(file_name, scale=4, min_side=384, downsample_size=256, hr_size=128):
+def load_image_with_truth(file_name, scale=4, min_side=384, downsample_size=256, hr_size=128, normalize=True):
     try:
         img = load_img(file_name)
     except IOError:
@@ -42,14 +42,17 @@ def load_image_with_truth(file_name, scale=4, min_side=384, downsample_size=256,
     x = img_to_array(low_resolution)
     y = img_to_array(img)
 
+    if normalize:
+        return (np.expand_dims(x, axis=0) / 255), (np.expand_dims(y, axis=0) / 255)
+
     return np.expand_dims(x, axis=0), np.expand_dims(y, axis=0)
 
 
-def load_images_with_truth(folder_path, scale=4, min_side=384, downsample_size=256, hr_size=128):
+def load_images_with_truth(folder_path, scale=4, min_side=384, downsample_size=256, hr_size=128, normalize=False):
     X = []
     y = []
     for img_path in tqdm(glob(folder_path)):
-        temp_X, temp_y = load_image_with_truth(img_path, scale, min_side, downsample_size, hr_size)
+        temp_X, temp_y = load_image_with_truth(img_path, scale, min_side, downsample_size, hr_size, normalize)
         if temp_X is not None:
             X.append(temp_X)
             y.append(temp_y)
@@ -61,13 +64,10 @@ def load_images_list_with_truth(images_list, scale=4, min_side=384, downsample_s
     X = []
     y = []
     for img_path in images_list:
-        temp_X, temp_y = load_image_with_truth(img_path, scale, min_side, downsample_size, hr_size)
+        temp_X, temp_y = load_image_with_truth(img_path, scale, min_side, downsample_size, hr_size, normalize)
         if temp_X is not None:
             X.append(temp_X)
             y.append(temp_y)
-
-    if normalize:
-        return (np.vstack(X).astype('float32') / 255), (np.vstack(y).astype('float32') / 255)
 
     return np.vstack(X), np.vstack(y)
 

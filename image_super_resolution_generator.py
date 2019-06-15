@@ -1,6 +1,7 @@
 import sys
 import gc
 from glob import glob
+from enum import Enum
 from models import generator_no_residual, generator_with_residual
 from utils import check_path_exists
 from data_loader import load_images_with_truth
@@ -11,14 +12,26 @@ from visualizations import plot_images_for_compare_separate, compare_models_sing
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.optimizers import Adam
 
+
+class DataSet(Enum):
+    MSCOCO = 1
+    CELEBA = 2
+
+
+class DataSetSize(Enum):
+    SMALL = 1
+    MEDIUM = 2
+    FULL = 3
+
+
 # Enable this flag if running on the laptop with smaller GPU.
 running_on_laptop = False
 
-# This will use the smaller datasets (train_small, val_small, test_small).
-use_small_dataset = False
-
 # Set to true if you want to use CelebA dataset. Otherwise it will use MS COCO.
-use_dataset_celeba = False
+dataset = DataSet.MSCOCO
+
+# This will use the smaller datasets (train_small, val_small, test_small).
+dataset_size = DataSetSize.SMALL
 
 # Set to true and it will not execute training. Usefull when just want to plot the results.
 disable_training = False
@@ -26,6 +39,8 @@ disable_training = False
 # Set to true if you want to load the current weights from the folder before training, so you can
 # continue with the training
 load_weights_before_training = False
+
+use_generator = False
 
 # What to be the verbose level during training.
 training_verbose = 2
@@ -51,37 +66,41 @@ if running_on_laptop:
     test_image_index_to_show = range(20)
     optimizer = Adam(lr=0.001)
 
-
 # Define the dataset path
-dataset = "MSCOCO"
-if use_dataset_celeba:
-    dataset = "celeba"
+if dataset == DataSet.MSCOCO:
+    dataset_name = "MSCOCO"
+elif dataset == DataSet.CELEBA:
+    dataset_name = "celeba"
 
-if not use_small_dataset:
-    train_dataset_path = './data/{0}/train/*'.format(dataset)
-    validation_dataset_path = './data/{0}/val/*'.format(dataset)
-    test_dataset_path = './data/{0}/test/*'.format(dataset)
-else:
-    train_dataset_path = './data/{0}/train_small/*'.format(dataset)
-    validation_dataset_path = './data/{0}/val_small/*'.format(dataset)
-    test_dataset_path = './data/{0}/test_small/*'.format(dataset)
+if dataset_size == DataSetSize.FULL:
+    train_dataset_path = './data/{0}/train/*'.format(dataset_name)
+    validation_dataset_path = './data/{0}/val/*'.format(dataset_name)
+    test_dataset_path = './data/{0}/test/*'.format(dataset_name)
+elif dataset_size == DataSetSize.MEDIUM:
+    train_dataset_path = './data/{0}/train_middle/*'.format(dataset_name)
+    validation_dataset_path = './data/{0}/val_middle/*'.format(dataset_name)
+    test_dataset_path = './data/{0}/test_small/*'.format(dataset_name)
+elif dataset_size == DataSetSize.SMALL:
+    train_dataset_path = './data/{0}/train_small/*'.format(dataset_name)
+    validation_dataset_path = './data/{0}/val_small/*'.format(dataset_name)
+    test_dataset_path = './data/{0}/test_small/*'.format(dataset_name)
 
 print(train_dataset_path)
 print(validation_dataset_path)
 print(test_dataset_path)
 
-checkpint_path_p = './saved_models/weights.best.train.mscoco.p.hdf5'
-checkpoint_path_p16 = './saved_models/weights.best.train.mscoco.p16.hdf5'
-checkpoint_path_p19 = './saved_models/weights.best.train.mscoco.p19.hdf5'
-checkpoint_path_t = './saved_models/weights.best.train.mscoco.t.hdf5'
-checkpoint_path_pt = './saved_models/weights.best.train.mscoco.pt.hdf5'
-checkpoint_path_pt16 = './saved_models/weights.best.train.mscoco.pt16.hdf5'
-checkpoint_path_pt16_bci = './saved_models/weights.best.train.mscoco.pt16_bci.hdf5'
-checkpoint_path_pt_bci = './saved_models/weights.best.train.mscoco.pt_bci.hdf5'
-checkpoint_path_pt16_no_res = './saved_models/weights.best.train.mscoco.pt16_no_res.hdf5'
-
-if use_dataset_celeba:
-    checkpint_path_p = './saved_models/weights.best.train.celeba.p.hdf5'
+if dataset == DataSet.MSCOCO:
+    checkpoint_path_p = './saved_models/weights.best.train.mscoco.p.hdf5'
+    checkpoint_path_p16 = './saved_models/weights.best.train.mscoco.p16.hdf5'
+    checkpoint_path_p19 = './saved_models/weights.best.train.mscoco.p19.hdf5'
+    checkpoint_path_t = './saved_models/weights.best.train.mscoco.t.hdf5'
+    checkpoint_path_pt = './saved_models/weights.best.train.mscoco.pt.hdf5'
+    checkpoint_path_pt16 = './saved_models/weights.best.train.mscoco.pt16.hdf5'
+    checkpoint_path_pt16_bci = './saved_models/weights.best.train.mscoco.pt16_bci.hdf5'
+    checkpoint_path_pt_bci = './saved_models/weights.best.train.mscoco.pt_bci.hdf5'
+    checkpoint_path_pt16_no_res = './saved_models/weights.best.train.mscoco.pt16_no_res.hdf5'
+elif dataset == DataSet.CELEBA:
+    checkpoint_path_p = './saved_models/weights.best.train.celeba.p.hdf5'
     checkpoint_path_p16 = './saved_models/weights.best.train.celeba.p16.hdf5'
     checkpoint_path_p19 = './saved_models/weights.best.train.celeba.p19.hdf5'
     checkpoint_path_t = './saved_models/weights.best.train.celeba.t.hdf5'
@@ -91,25 +110,32 @@ if use_dataset_celeba:
     checkpoint_path_pt_bci = './saved_models/weights.best.train.celeba.pt_bci.hdf5'
     checkpoint_path_pt16_no_res = './saved_models/weights.best.train.celeba.pt16_no_res.hdf5'
 
+if use_generator:
+    print('Loading train data file names:')
+    train_file_names = glob(train_dataset_path)
+    training_samples = len(train_file_names)
 
-print('Loading train data file names:')
-train_file_names = glob(train_dataset_path)
-print('Loading validation data file names:')
-validation_file_names = glob(validation_dataset_path)
-print('Loading test data file names:')
-test_file_names = glob(test_dataset_path)
-test_data, test_truth = load_images_with_truth(test_dataset_path, 4)
+    print('Loading validation data file names:')
+    validation_file_names = glob(validation_dataset_path)
+    validation_samples = len(validation_file_names)
+else:
+    print('Loading training data:')
+    train_data_tensors, train_truth_tensors = load_images_with_truth(train_dataset_path, 4, normalize=True)
+    training_samples = len(train_data_tensors)
 
-training_samples = len(train_file_names)
-validation_samples = len(validation_file_names)
-test_samples = len(test_file_names)
+    print('Loading validation data:')
+    validation_data_tensors, validation_truth_tensors = load_images_with_truth(validation_dataset_path, 4,
+                                                                               normalize=True)
+    validation_samples = len(validation_data_tensors)
 
-print("Train images: ", training_samples)
+print("Training images: ", training_samples)
 print('Validation images: ', validation_samples)
-print("Test images: ", test_samples)
 
-test_data_tensors = test_data.astype('float32') / 255
-test_truth_tensors = test_truth.astype('float32') / 255
+print('Loading test data:')
+test_data_tensors, test_truth_tensors = load_images_with_truth(test_dataset_path, 4, normalize=True)
+
+test_samples = len(test_data_tensors)
+print("Test images: ", test_samples)
 
 train_data_shape = (32, 32, 3)
 
@@ -117,27 +143,39 @@ train_data_shape = (32, 32, 3)
 # NOTE: Some of the parameters are used from the global space
 def model_train(model, optimizer, loss_function, checkpoint_path, verbose=2):
     try:
-        training_generator = DataGenerator(image_filenames=train_file_names, batch_size=train_batch_size)
-        validation_generator = DataGenerator(image_filenames=validation_file_names, batch_size=train_batch_size)
+        if use_generator:
+            training_generator = DataGenerator(image_filenames=train_file_names, batch_size=train_batch_size)
+            validation_generator = DataGenerator(image_filenames=validation_file_names, batch_size=train_batch_size)
 
         if load_weights_before_training:
             if check_path_exists(checkpoint_path):
+                print("Loading checkpoint: ", checkpoint_path)
                 model.load_weights(checkpoint_path)
+            else:
+                print("Checkpoint {0} doesn't exist. Skip loading.".format(checkpoint_path))
 
         model.compile(optimizer=optimizer, loss=loss_function, metrics=['accuracy'])
         checkpointer = ModelCheckpoint(filepath=checkpoint_path,
                                        verbose=verbose, save_best_only=True)
         early_stopper = EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=verbose)
-        model.fit_generator(generator=training_generator,
-                            steps_per_epoch=(training_samples // train_batch_size),
-                            validation_data=validation_generator,
-                            validation_steps=(validation_samples // train_batch_size),
-                            epochs=train_epochs,
-                            use_multiprocessing=False,      # When this is enabled it is failing
-                            workers=1,
-                            max_queue_size=32,
-                            callbacks=[checkpointer, early_stopper],
-                            verbose=verbose)
+        if use_generator:
+            model.fit_generator(generator=training_generator,
+                                steps_per_epoch=(training_samples // train_batch_size),
+                                validation_data=validation_generator,
+                                validation_steps=(validation_samples // train_batch_size),
+                                epochs=train_epochs,
+                                use_multiprocessing=False,      # When this is enabled it is failing
+                                workers=1,
+                                max_queue_size=32,
+                                callbacks=[checkpointer, early_stopper],
+                                verbose=verbose)
+        else:
+            model.fit(train_data_tensors, train_truth_tensors,
+                      validation_data=(validation_data_tensors, validation_truth_tensors),
+                      epochs=train_epochs,
+                      batch_size=train_batch_size,
+                      callbacks=[checkpointer, early_stopper],
+                      verbose=verbose)
     except OSError:
         print("OSError error: ", sys.exc_info()[0])
     except:
@@ -165,8 +203,8 @@ if enable_p:
     if not disable_training:
         print("Training P")
         model_train(model=model_p, optimizer=optimizer, loss_function=perceptual_loss,
-                    checkpoint_path=checkpint_path_p, verbose=training_verbose)
-    model_predict(model_p, checkpint_path_p)
+                    checkpoint_path=checkpoint_path_p, verbose=training_verbose)
+    model_predict(model_p, checkpoint_path_p)
     del model_p
     gc.collect()
 
@@ -256,7 +294,7 @@ models_data = []
 
 if enable_p:
     model_p = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
-    models_data.append({'name': "P", 'model': model_p, 'checkpoint': checkpint_path_p})
+    models_data.append({'name': "P", 'model': model_p, 'checkpoint': checkpoint_path_p})
 
 if enable_p19:
     model_p19 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
@@ -296,5 +334,5 @@ if enable_pt16_no_res:
                         'checkpoint': checkpoint_path_pt16_no_res})
 
 compare_models_single_image(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show,
-                            show_input=True, show_interpolated=False)
+                            show_input=True, show_interpolated=False, figsize=(16, 4))
 

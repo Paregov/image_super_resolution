@@ -63,7 +63,8 @@ def plot_multi_model_images_for_compare_separate(inputs, predictions, model_name
         plt.show()
 
 
-def plot_single_image_multi_model(input_image, predictions, truth, show_input=True, show_interpolated=True):
+def plot_single_image_multi_model(input_image, predictions, truth, show_input=True, show_interpolated=True,
+                                  figsize=(25, 5)):
     """
     Plot a single image that is predicted with multiple models for compare.
     We are going to show 4 images per row and will create as many rows as needed to show all of the predictions,
@@ -90,7 +91,7 @@ def plot_single_image_multi_model(input_image, predictions, truth, show_input=Tr
     prediction_index = 0
     for i in range(rows):
         pos = 0
-        f, axarr = plt.subplots(1, images_per_row, figsize=(25, 5))
+        f, axarr = plt.subplots(1, images_per_row, figsize=figsize)
 
         if i == 0 and show_input:
             axarr[pos].imshow(input_image)
@@ -140,7 +141,7 @@ def compare_models(test_data_tensors, test_truth_tensors, models_data, test_imag
 
     
 def compare_models_single_image(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show,
-                                show_input=True, show_interpolated=True):
+                                show_input=True, show_interpolated=True, figsize=(25,5)):
     predictions_per_model = []
     for model_data in models_data:
         model_data['model'].load_weights(model_data['checkpoint'])
@@ -156,7 +157,8 @@ def compare_models_single_image(test_data_tensors, test_truth_tensors, models_da
         print("Image: {0}".format(i + 1))
         plot_single_image_multi_model(test_data_tensors[i], predictions, test_truth_tensors[i],
                                       show_input=show_input,
-                                      show_interpolated=show_interpolated)
+                                      show_interpolated=show_interpolated,
+                                      figsize=figsize)
         print("")
 
     print('All done!')
