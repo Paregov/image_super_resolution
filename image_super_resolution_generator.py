@@ -31,16 +31,19 @@ running_on_laptop = False
 dataset = DataSet.MSCOCO
 
 # This will use the smaller datasets (train_small, val_small, test_small).
-dataset_size = DataSetSize.SMALL
+dataset_size = DataSetSize.MEDIUM
 
-# Set to true and it will not execute training. Usefull when just want to plot the results.
+# Set to true and it will not execute training. Use False when just want to plot the results.
 disable_training = False
 
 # Set to true if you want to load the current weights from the folder before training, so you can
 # continue with the training
 load_weights_before_training = False
 
-use_generator = False
+use_early_stopping = True
+early_stopping_patience = 5
+
+use_generator = True
 
 # What to be the verbose level during training.
 training_verbose = 2
@@ -50,7 +53,7 @@ enable_p16 = False
 enable_p19 = False
 enable_t = False
 enable_pt = False
-enable_pt16 = False
+enable_pt16 = True
 enable_pt16_bci = False
 enable_pt_bci = True
 enable_pt16_no_res = False
@@ -157,7 +160,15 @@ def model_train(model, optimizer, loss_function, checkpoint_path, verbose=2):
         model.compile(optimizer=optimizer, loss=loss_function, metrics=['accuracy'])
         checkpointer = ModelCheckpoint(filepath=checkpoint_path,
                                        verbose=verbose, save_best_only=True)
-        early_stopper = EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=verbose)
+        callbacks = [checkpointer]
+
+        if use_early_stopping:
+            early_stopping = EarlyStopping(monitor='val_loss',
+                                           min_delta=0,
+                                           patience=early_stopping_patience,
+                                           verbose=verbose)
+            callbacks.append(early_stopping)
+
         if use_generator:
             model.fit_generator(generator=training_generator,
                                 steps_per_epoch=(training_samples // train_batch_size),
@@ -167,14 +178,14 @@ def model_train(model, optimizer, loss_function, checkpoint_path, verbose=2):
                                 use_multiprocessing=False,      # When this is enabled it is failing
                                 workers=1,
                                 max_queue_size=32,
-                                callbacks=[checkpointer, early_stopper],
+                                callbacks=callbacks,
                                 verbose=verbose)
         else:
             model.fit(train_data_tensors, train_truth_tensors,
                       validation_data=(validation_data_tensors, validation_truth_tensors),
                       epochs=train_epochs,
                       batch_size=train_batch_size,
-                      callbacks=[checkpointer, early_stopper],
+                      callbacks=callbacks,
                       verbose=verbose)
     except OSError:
         print("OSError error: ", sys.exc_info()[0])
