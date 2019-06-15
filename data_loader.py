@@ -72,6 +72,16 @@ def load_images_list_with_truth(images_list, scale=4, min_side=384, downsample_s
     return np.vstack(X), np.vstack(y)
 
 
+def save_image(image, file_path):
+    result = Image.fromarray((image).astype(np.uint8))
+    result.save(file_path)
+
+    
+def save_image_from_tensor(image, file_path):
+    result = Image.fromarray((image * 255).astype(np.uint8))
+    result.save(file_path)
+
+
 ###############################################################################################
 # Some unused functions
 ###############################################################################################
