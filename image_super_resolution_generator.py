@@ -23,6 +23,10 @@ use_dataset_celeba = False
 # Set to true and it will not execute training. Usefull when just want to plot the results.
 disable_training = False
 
+# Set to true if you want to load the current weights from the folder before training, so you can
+# continue with the training
+load_weights_before_training = False
+
 # What to be the verbose level during training.
 training_verbose = 2
 
@@ -30,8 +34,8 @@ enable_p = False
 enable_p16 = False
 enable_p19 = False
 enable_t = False
-enable_pt = True
-enable_pt16 = True
+enable_pt = False
+enable_pt16 = False
 enable_pt16_bci = False
 enable_pt_bci = True
 enable_pt16_no_res = False
@@ -39,7 +43,7 @@ enable_pt16_no_res = False
 train_epochs = 100
 train_batch_size = 48
 test_image_index_to_show = range(2)
-optimizer = Adam(lr=0.0001)
+optimizer = Adam(lr=0.0005)
 
 if running_on_laptop:
     train_epochs = 100
@@ -66,55 +70,59 @@ print(train_dataset_path)
 print(validation_dataset_path)
 print(test_dataset_path)
 
-perceptual_loss_checkpint_path = './saved_models/weights.best.train.mscoco.p.hdf5'
-perceptual_loss_16_checkpoint_path = './saved_models/weights.best.train.mscoco.p16.hdf5'
-perceptual_loss_19_checkpoint_path = './saved_models/weights.best.train.mscoco.p19.hdf5'
-texture_loss_ml_checkpoint_path = './saved_models/weights.best.train.mscoco.t.hdf5'
-texture_plus_perceptual_loss_checkpoint_path = './saved_models/weights.best.train.mscoco.pt.hdf5'
-perceptual_16_plus_texture_loss_checkpoint_path = './saved_models/weights.best.train.mscoco.pt16.hdf5'
-perceptual_16_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.mscoco.pt16_bci.hdf5'
-perceptual_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.mscoco.pt_bci.hdf5'
-perceptual_16_plus_texture_loss_no_res_checkpoint_path = './saved_models/weights.best.train.mscoco.pt16_no_res.hdf5'
+checkpint_path_p = './saved_models/weights.best.train.mscoco.p.hdf5'
+checkpoint_path_p16 = './saved_models/weights.best.train.mscoco.p16.hdf5'
+checkpoint_path_p19 = './saved_models/weights.best.train.mscoco.p19.hdf5'
+checkpoint_path_t = './saved_models/weights.best.train.mscoco.t.hdf5'
+checkpoint_path_pt = './saved_models/weights.best.train.mscoco.pt.hdf5'
+checkpoint_path_pt16 = './saved_models/weights.best.train.mscoco.pt16.hdf5'
+checkpoint_path_pt16_bci = './saved_models/weights.best.train.mscoco.pt16_bci.hdf5'
+checkpoint_path_pt_bci = './saved_models/weights.best.train.mscoco.pt_bci.hdf5'
+checkpoint_path_pt16_no_res = './saved_models/weights.best.train.mscoco.pt16_no_res.hdf5'
 
 if use_dataset_celeba:
-    perceptual_loss_checkpint_path = './saved_models/weights.best.train.celeba.p.hdf5'
-    perceptual_loss_16_checkpoint_path = './saved_models/weights.best.train.celeba.p16.hdf5'
-    perceptual_loss_19_checkpoint_path = './saved_models/weights.best.train.celeba.p19.hdf5'
-    texture_loss_ml_checkpoint_path = './saved_models/weights.best.train.celeba.t.hdf5'
-    texture_plus_perceptual_loss_checkpoint_path = './saved_models/weights.best.train.celeba.pt.hdf5'
-    perceptual_16_plus_texture_loss_checkpoint_path = './saved_models/weights.best.train.celeba.pt16.hdf5'
-    perceptual_16_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.celeba.pt16_bci.hdf5'
-    perceptual_plus_texture_loss_bci_checkpoint_path = './saved_models/weights.best.train.celeba.pt_bci.hdf5'
-    perceptual_16_plus_texture_loss_no_res_checkpoint_path = './saved_models/weights.best.train.celeba.pt16_no_res.hdf5'
+    checkpint_path_p = './saved_models/weights.best.train.celeba.p.hdf5'
+    checkpoint_path_p16 = './saved_models/weights.best.train.celeba.p16.hdf5'
+    checkpoint_path_p19 = './saved_models/weights.best.train.celeba.p19.hdf5'
+    checkpoint_path_t = './saved_models/weights.best.train.celeba.t.hdf5'
+    checkpoint_path_pt = './saved_models/weights.best.train.celeba.pt.hdf5'
+    checkpoint_path_pt16 = './saved_models/weights.best.train.celeba.pt16.hdf5'
+    checkpoint_path_pt16_bci = './saved_models/weights.best.train.celeba.pt16_bci.hdf5'
+    checkpoint_path_pt_bci = './saved_models/weights.best.train.celeba.pt_bci.hdf5'
+    checkpoint_path_pt16_no_res = './saved_models/weights.best.train.celeba.pt16_no_res.hdf5'
 
 
-print('Loading train data:')
-train_filenames = glob(train_dataset_path)
-print('Loading validation data:')
-validation_filenames = glob(validation_dataset_path)
-print('Loading test data:')
-test_filenames = glob(test_dataset_path)
+print('Loading train data file names:')
+train_file_names = glob(train_dataset_path)
+print('Loading validation data file names:')
+validation_file_names = glob(validation_dataset_path)
+print('Loading test data file names:')
+test_file_names = glob(test_dataset_path)
 test_data, test_truth = load_images_with_truth(test_dataset_path, 4)
 
-training_samples = len(train_filenames)
-validation_samples = len(validation_filenames)
-test_samples = len(test_filenames)
+training_samples = len(train_file_names)
+validation_samples = len(validation_file_names)
+test_samples = len(test_file_names)
 
 print("Train images: ", training_samples)
 print('Validation images: ', validation_samples)
 print("Test images: ", test_samples)
 
-test_data_tensors = test_data.astype('float32')/255
-test_truth_tensors = test_truth.astype('float32')/255
+test_data_tensors = test_data.astype('float32') / 255
+test_truth_tensors = test_truth.astype('float32') / 255
 
-train_data_shape = (32,32,3)
+train_data_shape = (32, 32, 3)
 
 
 # NOTE: Some of the parameters are used from the global space
 def model_train(model, optimizer, loss_function, checkpoint_path, verbose=2):
     try:
-        training_generator = DataGenerator(image_filenames=train_filenames, batch_size=train_batch_size)
-        validation_generator = DataGenerator(image_filenames=validation_filenames, batch_size=train_batch_size)
+        training_generator = DataGenerator(image_filenames=train_file_names, batch_size=train_batch_size)
+        validation_generator = DataGenerator(image_filenames=validation_file_names, batch_size=train_batch_size)
+
+        if load_weights_before_training:
+            if check_path_exists(checkpoint_path):
+                model.load_weights(checkpoint_path)
 
         model.compile(optimizer=optimizer, loss=loss_function, metrics=['accuracy'])
         checkpointer = ModelCheckpoint(filepath=checkpoint_path,
@@ -150,140 +158,142 @@ def model_predict(model, checkpoint_path):
     print('All done!')
 
 
+# Here is the actual training of the models
+
 if enable_p:
-    model = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    model_p = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
     if not disable_training:
         print("Training P")
-        model_train(model=model, optimizer=optimizer, loss_function=perceptual_loss,
-                    checkpoint_path=perceptual_loss_checkpint_path, verbose=training_verbose)
-    model_predict(model, perceptual_loss_checkpint_path)
-    del model
+        model_train(model=model_p, optimizer=optimizer, loss_function=perceptual_loss,
+                    checkpoint_path=checkpint_path_p, verbose=training_verbose)
+    model_predict(model_p, checkpint_path_p)
+    del model_p
     gc.collect()
 
 if enable_p19:
-    model19 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    model_p19 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
     if not disable_training:
         print("Training P19")
-        model_train(model=model19, optimizer=optimizer, loss_function=perceptual_loss_19,
-                    checkpoint_path=perceptual_loss_19_checkpoint_path)
-    model_predict(model=model19, checkpoint_path=perceptual_loss_19_checkpoint_path)
-    del model19
+        model_train(model=model_p19, optimizer=optimizer, loss_function=perceptual_loss_19,
+                    checkpoint_path=checkpoint_path_p19)
+    model_predict(model=model_p19, checkpoint_path=checkpoint_path_p19)
+    del model_p19
     gc.collect()
 
 if enable_p16:
-    model16 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    model_p16 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
     if not disable_training:
         print("Training P16")
-        model_train(model=model16, optimizer=optimizer, loss_function=perceptual_loss_16,
-                    checkpoint_path=perceptual_loss_16_checkpoint_path, verbose=training_verbose)
-    model_predict(model=model16, checkpoint_path=perceptual_loss_16_checkpoint_path)
-    del model16
+        model_train(model=model_p16, optimizer=optimizer, loss_function=perceptual_loss_16,
+                    checkpoint_path=checkpoint_path_p16, verbose=training_verbose)
+    model_predict(model=model_p16, checkpoint_path=checkpoint_path_p16)
+    del model_p16
     gc.collect()
 
 if enable_t:
-    model_tl_ml = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    model_t = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
     if not disable_training:
         print("Training T")
-        model_train(model=model_tl_ml, optimizer=optimizer, loss_function=texture_loss_multi_layers,
-                    checkpoint_path=texture_loss_ml_checkpoint_path, verbose=training_verbose)
-    model_predict(model=model_tl_ml, checkpoint_path=texture_loss_ml_checkpoint_path)
-    del model_tl_ml
+        model_train(model=model_t, optimizer=optimizer, loss_function=texture_loss_multi_layers,
+                    checkpoint_path=checkpoint_path_t, verbose=training_verbose)
+    model_predict(model=model_t, checkpoint_path=checkpoint_path_t)
+    del model_t
     gc.collect()
 
 if enable_pt:
-    model_tl_plus_pl = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    model_pt = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
     if not disable_training:
         print("Training PT")
-        model_train(model=model_tl_plus_pl, optimizer=optimizer, loss_function=perceptual_plus_texture_loss,
-                    checkpoint_path=texture_plus_perceptual_loss_checkpoint_path, verbose=training_verbose)
-    model_predict(model=model_tl_plus_pl, checkpoint_path=texture_plus_perceptual_loss_checkpoint_path)
-    del model_tl_plus_pl
+        model_train(model=model_pt, optimizer=optimizer, loss_function=perceptual_plus_texture_loss,
+                    checkpoint_path=checkpoint_path_pt, verbose=training_verbose)
+    model_predict(model=model_pt, checkpoint_path=checkpoint_path_pt)
+    del model_pt
     gc.collect()
 
 if enable_pt16:
-    model_pl_16_plus_tl = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    model_pt16 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
     if not disable_training:
         print("Training P16")
-        model_train(model=model_pl_16_plus_tl, optimizer=optimizer, loss_function=perceptual_16_plus_texture_loss,
-                    checkpoint_path=perceptual_16_plus_texture_loss_checkpoint_path, verbose=training_verbose)
-    model_predict(model=model_pl_16_plus_tl, checkpoint_path=perceptual_16_plus_texture_loss_checkpoint_path)
-    del model_pl_16_plus_tl
+        model_train(model=model_pt16, optimizer=optimizer, loss_function=perceptual_16_plus_texture_loss,
+                    checkpoint_path=checkpoint_path_pt16, verbose=training_verbose)
+    model_predict(model=model_pt16, checkpoint_path=checkpoint_path_pt16)
+    del model_pt16
     gc.collect()
 
 if enable_pt16_bci:
-    model_pl_16_plus_tl_bci = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=True)
+    model_pt16_bci = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=True)
     if not disable_training:
         print("Training PT16_BCI")
-        model_train(model=model_pl_16_plus_tl_bci, optimizer=optimizer, loss_function=perceptual_16_plus_texture_loss,
-                    checkpoint_path=perceptual_16_plus_texture_loss_bci_checkpoint_path, verbose=training_verbose)
-    model_predict(model=model_pl_16_plus_tl_bci, checkpoint_path=perceptual_16_plus_texture_loss_bci_checkpoint_path)
-    del model_pl_16_plus_tl_bci
+        model_train(model=model_pt16_bci, optimizer=optimizer, loss_function=perceptual_16_plus_texture_loss,
+                    checkpoint_path=checkpoint_path_pt16_bci, verbose=training_verbose)
+    model_predict(model=model_pt16_bci, checkpoint_path=checkpoint_path_pt16_bci)
+    del model_pt16_bci
     gc.collect()
 
 if enable_pt_bci:
-    model_pl_plus_tl_bci = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=True)
+    model_pt_bci = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=True)
     if not disable_training:
         print("Training PT_BCI")
-        model_train(model=model_pl_plus_tl_bci, optimizer=optimizer, loss_function=perceptual_plus_texture_loss,
-                    checkpoint_path=perceptual_plus_texture_loss_bci_checkpoint_path, verbose=training_verbose)
-    model_predict(model=model_pl_plus_tl_bci, checkpoint_path=perceptual_plus_texture_loss_bci_checkpoint_path)
-    del model_pl_plus_tl_bci
+        model_train(model=model_pt_bci, optimizer=optimizer, loss_function=perceptual_plus_texture_loss,
+                    checkpoint_path=checkpoint_path_pt_bci, verbose=training_verbose)
+    model_predict(model=model_pt_bci, checkpoint_path=checkpoint_path_pt_bci)
+    del model_pt_bci
     gc.collect()
 
 if enable_pt16_no_res:
-    model_pl_16_plus_tl_no_res = generator_no_residual(input_shape=train_data_shape, summary=False)
+    model_pt16_no_res = generator_no_residual(input_shape=train_data_shape, summary=False)
     if not disable_training:
         print("Training PT16_NO_RES")
-        model_train(model=model_pl_16_plus_tl_no_res, optimizer=optimizer,
+        model_train(model=model_pt16_no_res, optimizer=optimizer,
                     loss_function=perceptual_16_plus_texture_loss,
-                    checkpoint_path=perceptual_16_plus_texture_loss_no_res_checkpoint_path, verbose=training_verbose)
-    model_predict(model=model_pl_16_plus_tl_no_res,
-                  checkpoint_path=perceptual_16_plus_texture_loss_no_res_checkpoint_path)
-    del model_pl_16_plus_tl_no_res
+                    checkpoint_path=checkpoint_path_pt16_no_res, verbose=training_verbose)
+    model_predict(model=model_pt16_no_res,
+                  checkpoint_path=checkpoint_path_pt16_no_res)
+    del model_pt16_no_res
     gc.collect()
 
 models_data = []
 
 if enable_p:
-    model = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
-    models_data.append({'name': "P", 'model': model, 'checkpoint': perceptual_loss_checkpint_path})
-
-if enable_p16:
-    model19 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
-    models_data.append({'name': "P VGG19", 'model': model19, 'checkpoint': perceptual_loss_19_checkpoint_path})
+    model_p = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    models_data.append({'name': "P", 'model': model_p, 'checkpoint': checkpint_path_p})
 
 if enable_p19:
-    model16 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
-    models_data.append({'name': "P VGG16", 'model': model16, 'checkpoint': perceptual_loss_16_checkpoint_path})
+    model_p19 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    models_data.append({'name': "P VGG19", 'model': model_p19, 'checkpoint': checkpoint_path_p19})
+
+if enable_p16:
+    model_p16 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    models_data.append({'name': "P VGG16", 'model': model_p16, 'checkpoint': checkpoint_path_p16})
 
 if enable_t:
-    model_tl_ml = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
-    models_data.append({'name': "T", 'model': model_tl_ml, 'checkpoint': texture_loss_ml_checkpoint_path})
+    model_t = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    models_data.append({'name': "T", 'model': model_t, 'checkpoint': checkpoint_path_t})
 
 if enable_pt:
-    model_tl_plus_pl = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
-    models_data.append({'name': "PT VGG19", 'model': model_tl_plus_pl,
-                        'checkpoint': texture_plus_perceptual_loss_checkpoint_path})
+    model_pt = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    models_data.append({'name': "PT", 'model': model_pt,
+                        'checkpoint': checkpoint_path_pt})
 
 if enable_pt16:
-    model_pl_16_plus_tl = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
-    models_data.append({'name': "PT VGG16", 'model': model_pl_16_plus_tl,
-                        'checkpoint': perceptual_16_plus_texture_loss_checkpoint_path})
+    model_pt16 = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=False)
+    models_data.append({'name': "PT VGG16", 'model': model_pt16,
+                        'checkpoint': checkpoint_path_pt16})
 
 if enable_pt16_bci:
-    model_pl_16_plus_tl_bci = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=True)
-    models_data.append({'name': "PT VGG16 (BCI)", 'model': model_pl_16_plus_tl_bci,
-                        'checkpoint': perceptual_16_plus_texture_loss_bci_checkpoint_path})
+    model_pt16_bci = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=True)
+    models_data.append({'name': "PT VGG16 (BCI)", 'model': model_pt16_bci,
+                        'checkpoint': checkpoint_path_pt16_bci})
 
 if enable_pt_bci:
-    model_pl_plus_tl_bci = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=True)
-    models_data.append({'name': "PT VGG19 (BCI)", 'model': model_pl_plus_tl_bci,
-                        'checkpoint': perceptual_plus_texture_loss_bci_checkpoint_path})
+    model_pt_bci = generator_with_residual(input_shape=train_data_shape, summary=False, add_bicubic=True)
+    models_data.append({'name': "PT (BCI)", 'model': model_pt_bci,
+                        'checkpoint': checkpoint_path_pt_bci})
 
 if enable_pt16_no_res:
-    model_pl_16_plus_tl_no_res = generator_no_residual(input_shape=train_data_shape, summary=False)
-    models_data.append({'name': "PT VGG16 (NR)", 'model': model_pl_16_plus_tl_no_res,
-                        'checkpoint': perceptual_16_plus_texture_loss_no_res_checkpoint_path})
+    model_pt16_no_res = generator_no_residual(input_shape=train_data_shape, summary=False)
+    models_data.append({'name': "PT VGG16 (NR)", 'model': model_pt16_no_res,
+                        'checkpoint': checkpoint_path_pt16_no_res})
 
 compare_models_single_image(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show,
                             show_input=True, show_interpolated=False)
