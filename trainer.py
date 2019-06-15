@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 logger = logging.getLogger('image_super_resolution')
 
+
 class Trainer:
     def __init__(self, model, weights, load_weights, tensors, train_time=1, batch_size=32):
         self._model = model
@@ -232,7 +233,7 @@ class GANTrainer:
 
                 # Pre train discriminator on  fake and real data  before starting the gan.
                 self._discriminator.trainable = True
-                # self._compile_discriminator()
+                self._compile_discriminator()
                 self._discriminator.train_on_batch(X, y_dis)
 
                 # Tricking the noised input of the Generator as real data
@@ -243,7 +244,7 @@ class GANTrainer:
                 # the weights of discriminator should be fixed.
                 # We can enforce that by setting the trainable flag
                 self._discriminator.trainable = False
-                # self._compile_discriminator()
+                self._compile_discriminator()
 
                 # training  the GAN by alternating the training of the Discriminator
                 # and training the chained GAN model with Discriminator’s weights freezed.
@@ -371,3 +372,4 @@ def multi_trainer(dataset, trainers_data):
 
     for t_data in trainers_data:
         gan_trainer(tensors, t_data)
+
