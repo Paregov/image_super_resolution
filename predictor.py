@@ -1,9 +1,8 @@
 from data_loader import load_image_file
 from data_saver import save_image_from_tensor
-import matplotlib.pyplot as plt
 import numpy as np
-from visualizations import compare_images
-from models import generator_no_residual, generator_with_residual, discriminator
+from models import generator_with_residual
+
 
 class Predictor:
     def __init__(self, checkpoint_path, has_bicubic=False):
@@ -15,8 +14,7 @@ class Predictor:
         model = generator_with_residual(input_shape=img.shape, summary=False, add_bicubic=self._has_bicubic)
         model.load_weights(self._checkpoint_path)
 
-        to_predict = []
-        to_predict.append(img)
+        to_predict = [img]
         predictions = model.predict(np.array(to_predict))
         return predictions[0]
 

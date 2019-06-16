@@ -2,10 +2,10 @@ import logging
 from glob import glob
 from models import generator_with_residual, discriminator
 from data_loader import load_images_with_truth
-from loss_functions import perceptual_loss, perceptual_loss_16, texture_loss, perceptual_plus_texture_loss
+from loss_functions import perceptual_plus_texture_loss
 from keras.optimizers import Adam
 from keras.losses import mean_squared_error, binary_crossentropy
-from trainer import GANTrainer, create_tensors_dict, trainer
+from trainer import GANTrainer
 from trainer import DataType, FilesDataProvider, InMemoryDataProvider
 
 
@@ -66,8 +66,6 @@ else:
     logger.info("Train images: {}".format(len(train_X)))
     logger.info('Validation images: {}'.format(len(validation_X)))
     logger.info("Test images: {}".format(len(test_X)))
-
-    tensors = create_tensors_dict(train_X, train_y, validation_X, validation_y, test_X, test_y)
 
     training_provider = InMemoryDataProvider(X=train_X, y=train_y, batch_size=train_batch_size)
     test_provider = InMemoryDataProvider(X=test_X, y=test_y, batch_size=train_batch_size)

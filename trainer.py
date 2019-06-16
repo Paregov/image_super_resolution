@@ -1,11 +1,9 @@
 import os
-from enum import Enum
-
 import time
 import logging
+from enum import Enum
 from abc import abstractmethod, ABC
 from utils import check_path_exists
-from keras.callbacks import ModelCheckpoint
 from keras.layers import Input
 from keras.models import Model
 import numpy as np
@@ -16,6 +14,32 @@ from data_loader import load_images_list_with_truth
 
 
 logger = logging.getLogger('image_super_resolution')
+
+
+# loss_function
+# optimizer
+# weights - [ G, D]
+# load_weights
+# train_times - [G, D]
+
+# We need to pass the training, validation and test data
+# This will be done through DataProvider
+# data_providers = {DataType.Training: training,
+#                   DataType.Validation: validation,
+#                   DataType.Test: test}
+
+# Models that we want to use. The idea to pass the models as well is so we cantrain with different initializerz
+# models = {'generator': None, 'discriminator': None}
+
+# Paths to the weights
+# weights = {'generator': '', 'discriminator': ''}
+
+# Training time in hours
+# train_times = {'generator': '', 'discriminator': ''}
+
+# arguments = {'kernel_initializer': 'glorot_uniform', 'loss_function': '',
+#              'optimizer': 'adam', 'weights': weights, 'load_weights': True,
+#              'train_times': train_times}
 
 
 class DataType(Enum):
@@ -96,61 +120,6 @@ class InMemoryDataProvider(DataProvider):
     def get_batch_by_indexes(self, indexes):
         return np.array(self._X)[tuple(indexes)],\
                np.array(self._y)[tuple(indexes)]
-
-
-class Trainer:
-    def __init__(self, model, weights, load_weights, tensors, train_time=1, batch_size=32):
-        self._model = model
-        self._weights = weights
-        self._load_weights = load_weights
-
-        self._train_X = tensors['train']['X']
-        self._train_y = tensors['train']['y']
-        self._valid_X = tensors['valid']['X']
-        self._valid_y = tensors['valid']['y']
-        self._test_X = tensors['test']['X']
-        self._test_y = tensors['test']['y']
-
-        self._train_time = train_time
-        self._batch_size = batch_size
-
-    def set_tensors(self, train_X, train_y, valid_X, valid_y, test_X, test_y):
-        self._train_X = train_X
-        self._train_y = train_y
-        self._valid_X = valid_X
-        self._valid_y = valid_y
-        self._test_X = test_X
-        self._test_y = test_y
-
-    def train(self):
-        check_pointer = ModelCheckpoint(filepath=self._weights,
-                                        verbose=1, save_best_only=True)
-        if self._load_weights:
-            if check_path_exists(self._weights):
-                print('Loading preserved weights before training.')
-                self._model.load_weights(self._weights)
-
-        start_time = time.time()
-
-        while True:
-            self._model.fit(self._train_X, self._train_y,
-                            validation_data=(self._valid_X, self._valid_y),
-                            epochs=1, batch_size=self._batch_size, callbacks=[check_pointer], verbose=2)
-
-            current_time = time.time()
-            elapsed_time = int((current_time - start_time) / 60)
-            print('Elapsed time: {0} minutes'.format(elapsed_time))
-            if elapsed_time >= self._train_time:
-                break
-
-
-class MultiTrainer:
-    def __init__(self, trainers):
-        self._trainers = trainers
-
-    def train(self):
-        for t in self._trainers:
-            t.train()
 
 
 class GANTrainer:
@@ -296,7 +265,7 @@ class GANTrainer:
 
         start_time = time.time()
         for e in range(1, epochs + 1):
-            print("Epoch %d" % e)
+            print("\nEpoch %d" % e)
             for _ in tqdm(range(batch_size)):
                 # generate random noise as an input to initialize the generator
                 # noise_numbers = np.random.randint(1, self._train_X.shape[:1], batch_size)
@@ -349,7 +318,10 @@ class GANTrainer:
 
 
 class GANGridTrainer:
-    def __init__(self, param_grid, weights_path, load_weights, tensors, compare_path, **kwargs):
+    """
+
+    """
+    def __init__(self, param_grid, weights_path, load_weights, data_providers, compare_path, **kwargs):
         """
         Perform a grid search on the GAN training.
 
@@ -363,7 +335,7 @@ class GANGridTrainer:
         self._param_grid = param_grid
         self._weight_path = weights_path
         self._load_weights = load_weights
-        self._tensors = tensors
+        self._data_providers = data_providers
         self._compare_path = compare_path
 
     # How to save the weights for the grid?
@@ -377,85 +349,6 @@ class GANGridTrainer:
                     # TODO: Save the combination that is currently used
                     # TODO: Generate full paths for the weights here
                     t = GANTrainer(models=m, optimizers=o, losses=l, loss_weights=None,
-                                   weights=None, load_weights=self._load_weights, tensors=tensors)
+                                   weights=None, load_weights=self._load_weights, data_providers=self._data_providers)
                     t.train(1000)
-
-
-# loss_function
-# optimizer
-# weights - [ G, D]
-# load_weights
-# train_times - [G, D]
-
-# We need to pass the training, validation and test data
-tensors = {'train': {'X': None, 'y': None},
-           'valid': {'X': None, 'y': None},
-           'test': {'X': None, 'y': None}}
-
-# Models that we want to use. The idea to pass the models as well is so we cantrain with different initializerz
-models = {'generator': None, 'discriminator': None}
-
-# Paths to the weights
-weights = {'generator': '', 'discriminator': ''}
-
-# Training time in hours
-train_times = {'generator': '', 'discriminator': ''}
-
-arguments = {'kernel_initializer': 'glorot_uniform', 'loss_function': '',
-             'optimizer': 'adam', 'weights': weights, 'load_weights': True,
-             'train_times': train_times}
-
-
-def create_tensors_dict(train_X, train_y, valid_X, valid_y, test_X, test_y):
-    tensors = {'train': {'X': train_X, 'y': train_y},
-               'valid': {'X': valid_X, 'y': valid_y},
-               'test': {'X': test_X, 'y': test_y}}
-
-    return tensors
-
-
-def trainer(model, weights, load_weights, tensors, train_time=1, batch_size=32):
-    check_pointer = ModelCheckpoint(filepath=weights,
-                                    verbose=1, save_best_only=True)
-
-    train_X = tensors['train']['X']
-    train_y = tensors['train']['y']
-    valid_X = tensors['valid']['X']
-    valid_y = tensors['valid']['y']
-    test_X = tensors['test']['X']
-    test_X = tensors['test']['y']
-
-    if load_weights:
-        if check_path_exists(weights):
-            print('Loading preserved weights before training.')
-            model.load_weights(weights)
-
-    start_time = time.time()
-
-    while True:
-        model.fit(train_X, train_y,
-                  validation_data=(valid_X, valid_y),
-                  epochs=1, batch_size=batch_size, callbacks=[check_pointer], verbose=2)
-
-        current_time = time.time()
-        elapsed_time = int((current_time - start_time) / 60)
-        print('Elapsed time: {0} minutes'.format(elapsed_time))
-        if elapsed_time >= train_time:
-            break
-
-
-def gan_trainer(models, weights, load_weights, tensors, train_times):
-    # if models['generator']
-    pass
-
-
-def multi_trainer(dataset, trainers_data):
-    if dataset is None:
-        return
-
-    if trainers_data is None:
-        return
-
-    for t_data in trainers_data:
-        gan_trainer(tensors, t_data)
 
