@@ -162,3 +162,34 @@ def compare_models_single_image(test_data_tensors, test_truth_tensors, models_da
         print("")
 
     print('All done!')
+
+
+def compare_images(data, images_per_row=4, figsize=(25, 5), multiply=False):
+    """
+    """
+    images_count = len(data)
+
+    rows = int(images_count / images_per_row)
+    if images_count % images_per_row != 0:
+        rows += 1
+
+    image_index = 0
+    for i in range(rows):
+        pos = 0
+        f, axarr = plt.subplots(1, images_per_row, figsize=figsize)
+
+        for p in range(images_count):
+            current_image = data[image_index]
+            if multiply:
+                axarr[pos].imshow((current_image['image'] * 255).astype(np.uint8))
+            else:
+                axarr[pos].imshow((current_image['image']).astype(np.uint8))
+            axarr[pos].set_title(current_image['name'])
+            pos += 1
+            image_index += 1
+
+            if pos >= images_per_row or image_index >= images_count:
+                break
+
+        plt.show()
+

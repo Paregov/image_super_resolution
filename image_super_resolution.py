@@ -1,5 +1,5 @@
 import logging
-from models import generator_no_residual, generator_with_residual, discriminator
+from models import generator_with_residual, discriminator
 from data_loader import load_images_with_truth
 from loss_functions import perceptual_loss, perceptual_loss_16, texture_loss, perceptual_plus_texture_loss
 from keras.optimizers import Adam
@@ -43,31 +43,22 @@ validation_dataset_path = './data/celeba/valid_small/*'
 test_dataset_path = './data/celeba/test_small/*'
 
 logger.info('Loading train data:')
-train_data, train_truth = load_images_with_truth(train_dataset_path, 4)
+train_X, train_y = load_images_with_truth(train_dataset_path, 4, normalize=True)
 logger.info('Loading validation data:')
-validation_data, validation_truth = load_images_with_truth(validation_dataset_path, 4)
+validation_X, validation_y = load_images_with_truth(validation_dataset_path, 4, normalize=True)
 logger.info('Loading test data:')
-test_data, test_truth = load_images_with_truth(test_dataset_path, 4)
+test_X, test_y = load_images_with_truth(test_dataset_path, 4, normalize=True)
 
-logger.info("Train images: {}".format(len(train_data)))
-logger.info('Validation images: {}'.format(len(validation_data)))
-logger.info("Test images: {}".format(len(test_data)))
-
-train_X = train_data.astype('float32')/255
-train_y = train_truth.astype('float32')/255
-
-validation_X = validation_data.astype('float32')/255
-validation_y = validation_truth.astype('float32')/255
-
-test_X = test_data.astype('float32')/255
-test_y = test_truth.astype('float32')/255
+logger.info("Train images: {}".format(len(train_X)))
+logger.info('Validation images: {}'.format(len(validation_X)))
+logger.info("Test images: {}".format(len(test_X)))
 
 tensors = create_tensors_dict(train_X, train_y, validation_X, validation_y, test_X, test_y)
 
-generator = generator_with_residual(input_shape=train_data.shape[1:], summary=True)
-discriminator = discriminator(input_shape=train_truth.shape[1:])
+generator = generator_with_residual(input_shape=train_X.shape[1:], summary=True)
+discriminator = discriminator(input_shape=train_y.shape[1:])
 
-optimizer = Adam(lr=1e-4)
+optimizer = Adam(lr=0.0005)
 models = {'generator': generator, 'discriminator': discriminator}
 optimizers = {'generator': optimizer, 'discriminator': optimizer, 'gan': optimizer}
 losses = {'generator': perceptual_plus_texture_loss, 'discriminator': binary_crossentropy, 'gan': binary_crossentropy}
