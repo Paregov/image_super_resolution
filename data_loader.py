@@ -73,7 +73,7 @@ def load_images_list_with_truth(images_list, scale=4, min_side=384, downsample_s
     return np.vstack(X), np.vstack(y)
 
 
-def load_image_file(file_name, normalize=False):
+def load_image_file(file_name, normalize=False, vstack=False):
     try:
         img = load_img(file_name)
     except IOError:
@@ -81,10 +81,14 @@ def load_image_file(file_name, normalize=False):
 
     img_array = img_to_array(img)
 
+    result = np.expand_dims(img_array, axis=0)
     if normalize:
-        return np.expand_dims(img_array, axis=0) / 255
+        result = result / 255
+    
+    if vstack:
+        result = np.vstack(result)
 
-    return np.expand_dims(img_array, axis=0)
+    return result
 
 
 def load_images_from_folder(folder_path, normalize=False):
