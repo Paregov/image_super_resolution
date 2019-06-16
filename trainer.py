@@ -265,11 +265,9 @@ class GANTrainer:
 
         start_time = time.time()
         for e in range(1, epochs + 1):
-            print("\nEpoch %d" % e)
+            logger.info("Epoch %d" % e)
             for _ in tqdm(range(batch_size)):
-                # generate random noise as an input to initialize the generator
-                # noise_numbers = np.random.randint(1, self._train_X.shape[:1], batch_size)
-                # noise = np.random.normal(0,1, [batch_size, 100])
+                # Get images as input for the generator.
                 indexes = [np.random.randint(low=0, high=self._training.len(), size=batch_size)]
                 X_gen, __ = self._training.get_batch_by_indexes(indexes)
                 generated_images = self._generator.predict(X_gen)
@@ -287,23 +285,24 @@ class GANTrainer:
 
                 # Pre train discriminator on  fake and real data  before starting the gan.
                 self._discriminator.trainable = True
-                # self._compile_discriminator()
-                self._discriminator.train_on_batch(X_dis, y_dis)
+                d_loss = self._discriminator.train_on_batch(X_dis, y_dis)
 
-                # Tricking the noised input of the Generator as real data
+                # Tricking the input of the Generator as real data
                 indexes = [np.random.randint(low=0, high=self._training.len(), size=batch_size)]
-                X_gen, __ = self._training.get_batch_by_indexes(indexes)
-                y_gen = np.ones(batch_size)
+                X_gan, __ = self._training.get_batch_by_indexes(indexes)
+                y_gan = np.ones(batch_size)
 
                 # During the training of gan,
                 # the weights of discriminator should be fixed.
-                # We can enforce that by setting the trainable flag
+                # We can enforce that by setting the trainable flag.
                 self._discriminator.trainable = False
-                # self._compile_discriminator()
 
-                # training  the GAN by alternating the training of the Discriminator
+                # Training  the GAN by alternating the training of the Discriminator
                 # and training the chained GAN model with Discriminator’s weights friezed.
-                self._gan.train_on_batch(X_gen, y_gen)
+                a_loss = self._gan.train_on_batch(X_gan, y_gan)
+
+            # Plot the progress
+            logger.info("%d [D loss: %f, acc.: %.2f%%] [A loss: %f]" % (e, d_loss[0], 100 * d_loss[1], a_loss))
 
             if e == 1 or e % epochs_between_plots == 0:
                 self.plot_images_for_compare(epoch=e, base_path=self._compare_path)
@@ -313,7 +312,7 @@ class GANTrainer:
 
             current_time = time.time()
             if ((current_time - start_time)/60) > max_train_time:
-                print('Model {} has been trained for the max_train_time ({})'.format('NAME', max_train_time))
+                logger.info('Model {} has been trained for the max_train_time ({})'.format('NAME', max_train_time))
                 break
 
 
