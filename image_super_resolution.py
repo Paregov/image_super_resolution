@@ -40,7 +40,7 @@ epochs_between_plots = 50
 epochs_between_saves = 50
 load_saved_checkpoint_before_training = False
 max_train_time = 60 * 24    # 24 hours
-optimizer_learning_rate = 0.001
+optimizer_learning_rate = 0.0002
 
 # Define the dataset path
 train_dataset_path = './data/MSCOCO/train/*'
