@@ -1,16 +1,101 @@
 import os
+from enum import Enum
+
+import time
 import logging
+from abc import abstractmethod, ABC
 from utils import check_path_exists
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Input
 from keras.models import Model
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 from tqdm import tqdm
+
+from data_loader import load_images_list_with_truth
 
 
 logger = logging.getLogger('image_super_resolution')
+
+
+class DataType(Enum):
+    Training = 1
+    Validation = 2
+    Test = 3
+
+
+class ModelType(Enum):
+    Generator = 1
+    Discriminator = 2
+    GAN = 3
+
+
+class DataProvider(ABC):
+    """
+    Base class to provide data for the trainers.
+    """
+    @abstractmethod
+    def len(self):
+        return 0
+
+    @abstractmethod
+    def batches_len(self):
+        return 0
+
+    @abstractmethod
+    def get_batch(self, idx):
+        pass
+
+    @abstractmethod
+    def get_batch_by_indexes(self, indexes):
+        pass
+
+
+class FilesDataProvider(DataProvider):
+    def __init__(self, image_file_names, batch_size):
+        self._image_file_names = image_file_names
+        self._batch_size = batch_size
+        self._len = len(self._image_file_names)
+        self._batches_len = int(np.ceil(len(self._image_file_names) / float(self._batch_size)))
+
+    def len(self):
+        return self._len
+
+    def batches_len(self):
+        return self._batches_len
+
+    def get_batch(self, idx):
+        batch_x = self._image_file_names[idx * self._batch_size:(idx + 1) * self._batch_size]
+
+        return load_images_list_with_truth(images_list=batch_x, normalize=True)
+
+    def get_batch_by_indexes(self, indexes):
+        batch_x = np.array(self._image_file_names)[tuple(indexes)]
+
+        return load_images_list_with_truth(images_list=batch_x, normalize=True)
+
+
+class InMemoryDataProvider(DataProvider):
+    def __init__(self, X, y, batch_size):
+        self._X = X
+        self._y = y
+        self._batch_size = batch_size
+        self._len = len(self._X)
+        self._batches_len = int(np.ceil(len(self._X) / float(self._batch_size)))
+
+    def len(self):
+        return self._len
+
+    def batches_len(self):
+        return self._batches_len
+
+    def get_batch(self, idx):
+        return self._X[idx * self._batch_size:(idx + 1) * self._batch_size],\
+               self._y[idx * self._batch_size:(idx + 1) * self._batch_size]
+
+    def get_batch_by_indexes(self, indexes):
+        return np.array(self._X)[tuple(indexes)],\
+               np.array(self._y)[tuple(indexes)]
 
 
 class Trainer:
@@ -72,8 +157,8 @@ class GANTrainer:
     """
     GAN training class. It plots the result of the training on a specified period of training epochs.
     """
-    def __init__(self, models, optimizers, losses, loss_weights, weights, load_weights, tensors, compare_path='.',
-                 **kwargs):
+    def __init__(self, models, optimizers, losses, loss_weights, weights, load_weights, data_providers,
+                 compare_path='.', **kwargs):
         """
         Initialization function for the GANTrainer.
 
@@ -83,7 +168,7 @@ class GANTrainer:
         :param loss_weights:
         :param weights:
         :param load_weights:
-        :param tensors:
+        :param data_providers:
         """
         self._generator = models['generator']
         self._discriminator = models['discriminator']
@@ -91,12 +176,9 @@ class GANTrainer:
         self._discriminator_weights = weights['discriminator']
         self._load_weights = load_weights
 
-        self._train_X = tensors['train']['X']
-        self._train_y = tensors['train']['y']
-        self._valid_X = tensors['valid']['X']
-        self._valid_y = tensors['valid']['y']
-        self._test_X = tensors['test']['X']
-        self._test_y = tensors['test']['y']
+        self._training = data_providers[DataType.Training]
+        # self._validation = data_providers[DataType.Validation]
+        self._test = data_providers[DataType.Test]
 
         self._optimizer_g = optimizers['generator']
         self._optimizer_d = optimizers['discriminator']
@@ -111,6 +193,9 @@ class GANTrainer:
         self._compile_generator()
         self._compile_discriminator()
 
+        X, y = self._training.get_batch(1)
+        self._image_shape = X.shape[1:]
+
         self._gan = self.create_gan()
 
     def _compile_generator(self):
@@ -120,7 +205,7 @@ class GANTrainer:
         self._discriminator.compile(optimizer=self._optimizer_d, loss=self._loss_d, metrics=['accuracy'])
 
     def plot_generated_images(self, epoch, examples=10, dim=(2, 5), figsize=(15, 10), base_path='.'):
-        images = self._test_X[np.random.randint(low=0, high=self._test_X.shape[0], size=examples)]
+        images = self._test.get_batch_by_indexes(np.random.randint(low=0, high=self._test.len(), size=examples))
         generated_images = self._generator.predict(images)
         plt.figure(figsize=figsize)
         for i in range(generated_images.shape[0]):
@@ -135,10 +220,9 @@ class GANTrainer:
         dim = (examples, 3)
         figsize = (examples, examples*2)
 
-        indexes = np.random.randint(low=0, high=self._test_X.shape[0], size=examples)
-        images = self._test_X[indexes]
+        indexes = [np.random.randint(low=0, high=self._test.len(), size=examples)]
+        images, real_images = self._test.get_batch_by_indexes(indexes)
         generated_images = self._generator.predict(images)
-        real_images = self._test_y[indexes]
 
         plt.figure(figsize=figsize)
         sub_plot = 0
@@ -168,7 +252,7 @@ class GANTrainer:
     def create_gan(self):
         self._discriminator.trainable = False
 
-        inputs = Input(self._train_X.shape[1:])
+        inputs = Input(self._image_shape)
         generated_images = self._generator(inputs)
         outputs = self._discriminator(generated_images)
 
@@ -217,15 +301,16 @@ class GANTrainer:
                 # generate random noise as an input to initialize the generator
                 # noise_numbers = np.random.randint(1, self._train_X.shape[:1], batch_size)
                 # noise = np.random.normal(0,1, [batch_size, 100])
-                noise = self._train_X[np.random.randint(low=0, high=self._train_X.shape[0], size=batch_size)]
-
-                generated_images = self._generator.predict(noise)
+                indexes = [np.random.randint(low=0, high=self._training.len(), size=batch_size)]
+                X_gen, __ = self._training.get_batch_by_indexes(indexes)
+                generated_images = self._generator.predict(X_gen)
 
                 # Get a random set of  real images
-                image_batch = self._train_y[np.random.randint(low=0, high=self._train_X.shape[0], size=batch_size)]
+                indexes = [np.random.randint(low=0, high=self._training.len(), size=batch_size)]
+                __, real_images = self._training.get_batch_by_indexes(indexes)
 
                 # Construct different batches of real and fake data
-                X = np.concatenate([image_batch, generated_images])
+                X_dis = np.concatenate([real_images, generated_images])
 
                 # Labels for generated and real data
                 y_dis = np.zeros(2 * batch_size)
@@ -233,22 +318,23 @@ class GANTrainer:
 
                 # Pre train discriminator on  fake and real data  before starting the gan.
                 self._discriminator.trainable = True
-                self._compile_discriminator()
-                self._discriminator.train_on_batch(X, y_dis)
+                # self._compile_discriminator()
+                self._discriminator.train_on_batch(X_dis, y_dis)
 
                 # Tricking the noised input of the Generator as real data
-                noise = self._train_X[np.random.randint(low=0, high=self._train_X.shape[0], size=batch_size)]
+                indexes = [np.random.randint(low=0, high=self._training.len(), size=batch_size)]
+                X_gen, __ = self._training.get_batch_by_indexes(indexes)
                 y_gen = np.ones(batch_size)
 
                 # During the training of gan,
                 # the weights of discriminator should be fixed.
                 # We can enforce that by setting the trainable flag
                 self._discriminator.trainable = False
-                self._compile_discriminator()
+                # self._compile_discriminator()
 
                 # training  the GAN by alternating the training of the Discriminator
-                # and training the chained GAN model with Discriminator’s weights freezed.
-                self._gan.train_on_batch(noise, y_gen)
+                # and training the chained GAN model with Discriminator’s weights friezed.
+                self._gan.train_on_batch(X_gen, y_gen)
 
             if e == 1 or e % epochs_between_plots == 0:
                 self.plot_images_for_compare(epoch=e, base_path=self._compare_path)

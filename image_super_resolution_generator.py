@@ -38,7 +38,7 @@ disable_training = False
 
 # Set to true if you want to load the current weights from the folder before training, so you can
 # continue with the training
-load_weights_before_training = False
+load_weights_before_training = True
 
 use_early_stopping = True
 early_stopping_patience = 5
@@ -55,7 +55,7 @@ enable_t = False
 enable_pt = False
 enable_pt16 = True
 enable_pt16_bci = False
-enable_pt_bci = True
+enable_pt_bci = False
 enable_pt16_no_res = False
 
 train_epochs = 100
@@ -147,8 +147,8 @@ train_data_shape = (32, 32, 3)
 def model_train(model, optimizer, loss_function, checkpoint_path, verbose=2):
     try:
         if use_generator:
-            training_generator = DataGenerator(image_filenames=train_file_names, batch_size=train_batch_size)
-            validation_generator = DataGenerator(image_filenames=validation_file_names, batch_size=train_batch_size)
+            training_generator = DataGenerator(image_file_names=train_file_names, batch_size=train_batch_size)
+            validation_generator = DataGenerator(image_file_names=validation_file_names, batch_size=train_batch_size)
 
         if load_weights_before_training:
             if check_path_exists(checkpoint_path):
