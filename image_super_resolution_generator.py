@@ -25,10 +25,10 @@ class DataSetSize(Enum):
 
 
 # Enable this flag if running on the laptop with smaller GPU.
-running_on_laptop = False
+running_on_laptop = True
 
 # Set to true if you want to use CelebA dataset. Otherwise it will use MS COCO.
-dataset = DataSet.MSCOCO
+dataset = DataSet.CELEBA
 
 # This will use the smaller datasets (train_small, val_small, test_small).
 dataset_size = DataSetSize.FULL
@@ -38,7 +38,7 @@ disable_training = False
 
 # Set to true if you want to load the current weights from the folder before training, so you can
 # continue with the training
-load_weights_before_training = True
+load_weights_before_training = False
 
 use_early_stopping = True
 early_stopping_patience = 10
@@ -67,7 +67,7 @@ if running_on_laptop:
     train_epochs = 100
     train_batch_size = 8
     test_image_index_to_show = range(20)
-    optimizer = Adam(lr=0.001)
+    optimizer = Adam(lr=0.0005)
 
 # Define the dataset path
 if dataset == DataSet.MSCOCO:
@@ -345,5 +345,5 @@ if enable_pt16_no_res:
                         'checkpoint': checkpoint_path_pt16_no_res})
 
 compare_models_single_image(test_data_tensors, test_truth_tensors, models_data, test_image_index_to_show,
-                            show_input=True, show_interpolated=False, figsize=(16, 4))
+                            show_input=True, show_interpolated=False, figsize=(20, 5))
 
