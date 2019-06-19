@@ -31,7 +31,7 @@ running_on_laptop = False
 dataset = DataSet.MSCOCO
 
 # This will use the smaller datasets (train_small, val_small, test_small).
-dataset_size = DataSetSize.MEDIUM
+dataset_size = DataSetSize.FULL
 
 # Set to true and it will not execute training. Use False when just want to plot the results.
 disable_training = False
@@ -41,7 +41,7 @@ disable_training = False
 load_weights_before_training = True
 
 use_early_stopping = True
-early_stopping_patience = 5
+early_stopping_patience = 10
 
 use_generator = True
 
@@ -59,8 +59,8 @@ enable_pt_bci = False
 enable_pt16_no_res = False
 
 train_epochs = 100
-train_batch_size = 48
-test_image_index_to_show = range(2)
+train_batch_size = 32
+test_image_index_to_show = range(20)
 optimizer = Adam(lr=0.0005)
 
 if running_on_laptop:
